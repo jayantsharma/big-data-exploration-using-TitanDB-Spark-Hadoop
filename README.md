@@ -12,3 +12,29 @@
 ### Titan
 3. Get Titan 1.0.0 from the [Downloads](https://github.com/thinkaurelius/titan/wiki/Downloads) page @ Titan.
 4. `bin/gremlin.sh` from inside the project directory, and you're good to go.
+
+
+## Data Processing
+
+### General Strategy
+1. Convert data to GraphML using Spark
+2. Use BulkLoaderVertexProgram(running over Spark) to digest the resulting GraphML file and create graph
+
+
+#### Convert Data to csv using Spark
+##### Setting-up Spark
+1. Download Hadoop __1.2.1__ and set it up in pseudo-distributed mode.
+1. Download Spark __1.6.1__.
+2. Modify _spark-env.sh_ and _spark-defaults.conf_ so that appropriate libraries are loaded and hadoop/hdfs is setup. [conf files in _conf_ directory]
+3. Examples snippet
+```scala
+import org.apache.spark.sql.SQLContext
+val sqlContext = new SQLContext(sc)
+val df = sqlContext.read.format("com.databricks.spark.xml").option("rowTag", "row").load("input/users.xml")
+df.select("@Id", "@DisplayName", "@Age", "@Location", "@UpVotes", "@DownVotes", "@Reputation").write.format("com.databricks.spark.csv").option("header", "true").save("output/users")
+```
+##### Load Data using spark-xml
+- Modify in-place XML so it's readable
+```sh
+sed -i -e 's/\/>/><foo>bar<\/foo><\/row>/' Users.xml
+```
