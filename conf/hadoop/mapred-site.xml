@@ -8,4 +8,8 @@
          <name>mapred.job.tracker</name>
          <value>localhost:9001</value>
      </property>
+     <property>
+         <name>mapreduce.jobtracker.staging.root.dir</name>
+         <value>/user</value>
+     </property>
 </configuration>

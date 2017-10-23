@@ -8,8 +8,8 @@ __NOTE__: All versions of the following support software have been selected beca
 3. Unzip the built package, and execute `bin/elasticsearch`. Verify elastic is up using: `curl -X GET http://localhost:9200/`.
 
 ### Cassandra
-2. Get [Cassandra 2.1.19]() from the _releases_ section of their Github repo.
-2. Execute `bin/cassandra` from the root directory of the un-archived package. The default settings worked for me with storage PROJECT\_ROOT/data/data, so nothing to do here. 
+2. Get [Cassandra 2.1.19](http://www.apache.org/dyn/closer.lua/cassandra/2.1.19/apache-cassandra-2.1.19-bin.tar.gz) from their  _Downloads_ section of their website.
+2. Execute `bin/cassandra` from the root directory of the un-archived package. The default settings worked for me with storage set to PROJECT\_ROOT/data/data, so nothing to do here. 
 2. You can start cassandra in the background with `cassandra -f` and forget about it.
 
 ### Spark
@@ -17,15 +17,16 @@ Spark is required because we need to process large XML files. This might sound l
 1. Get [Spark 1.6.1](https://d3kbcqa49mib13.cloudfront.net/spark-1.6.1-bin-hadoop1.tgz).
 2. Edit `conf/spark-env.sh` to set the HADOOP\_CONF\_DIR environment variable to point to the `conf` directory of your Hadoop installation, so that it integrates with HDFS. Now by default, File I/O happens with HDFS.
 3. Add the following line to `conf/spark-defaults.conf`, so that the necessary libraries are loaded each time Spark is started.
+4. Refer `conf/spark`.
 
 ### Hadoop/HDFS
 Not an essential per se, but the Big Data requirement(parsing of XML files running into GBs with Spark) alongwith the way TitanDB's bulk loading program works(only reads from HDFS) requires this.
-1. Get [Elasticsearch 1.5.2](https://github.com/elastic/elasticsearch/releases/tag/v1.5.2) from the _releases_ section of the Github repo.
-2. Use [Maven](http://maven.apache.org) to build elasticsearch from the sourcecode: `mvn clean package -DskipTests`.
-3. Unzip the built package, and execute `bin/elasticsearch`. Verify elastic is up using: `curl -X GET http://localhost:9200/`.
+1. Get your preferred format from Apache Archives of [Hadoop 1.2.1](https://archive.apache.org/dist/hadoop/common/hadoop-1.2.1/).
+2. Conf files from in the `conf/hadoop` to be used. Specifically, `dfs.data.dir` and `dfs.name.dir` need to be set to some location in the local filesystem APART FROM /tmp, since /tmp is cleared every time the machine powers down.
 
 ### Titan
 3. Get Titan 1.0.0 from the [Downloads](https://github.com/thinkaurelius/titan/wiki/Downloads) page @ Titan.
+4. Edit `bin/gremlin.sh` to ensure CLASSPATH includes the path to Hadoop's conf directory. Refer `bin/gremlin.sh`.
 4. `bin/gremlin.sh` from inside the project directory, and you're good to go.
 
 
