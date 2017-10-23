@@ -28,16 +28,17 @@ Not an essential per se, but the Big Data requirement(parsing of XML files runni
 3. Get Titan 1.0.0 from the [Downloads](https://github.com/thinkaurelius/titan/wiki/Downloads) page @ Titan.
 4. Edit `bin/gremlin.sh` to ensure CLASSPATH includes the path to Hadoop's conf directory. Refer `bin/gremlin.sh`.
 4. `bin/gremlin.sh` from inside the project directory, and you're good to go.
+4. Get jar file for xlson csv processing.
 
 
 ## Data Processing
 
 ### General Strategy
-1. Convert data to GraphML using Spark
-2. Use BulkLoaderVertexProgram(running over Spark) to digest the resulting GraphML file and create graph
+1. Convert data to CSV using Spark
+2. Use BulkLoaderVertexProgram(running over Spark) to digest the resulting CSV file and create graph
 
 
-#### Convert Data to csv using Spark
+#### Convert Data to CSV using Spark
 ##### Setting-up Spark
 1. Download Hadoop __1.2.1__ and set it up in pseudo-distributed mode.
 1. Download Spark __1.6.1__.
@@ -55,9 +56,8 @@ df.select("@Id", "@DisplayName", "@Age", "@Location", "@UpVotes", "@DownVotes", 
 sed -i -e 's/\/>/><foo>bar<\/foo><\/row>/' Users.xml
 ```scala
 // Take 1/n fraction of data points
-var filtered_posts_users = df.filter(df.col("@OwnerUserId").isNotNull).select("@Id", "@OwnerUserId")
-filtered_posts_users = filtered_posts_users.limit(filtered_posts_users.count() / 10)
-val posts_then_users = filtered_posts_users.withColumnRenamed("@Id", "a").withColumn("c", lit(null: String)).withColumnRenamed("@OwnerUserId", "b").select("a","b","c")
-val users_then_posts = filtered_posts_users.withColumnRenamed("@OwnerUserId", "a").withColumn("b", lit(null: String)).withColumnRenamed("@Id", "c").select("a","b","c")
-posts_then_users.unionAll(users_then_posts).write.format("com.databricks.spark.csv").option("nullValue", "").save("graph/edges/posts_owners")
-
+var filtered_posts_users = df.filter(df.col("@OwnerUserId").isNotNull).select("@Id", "@OwnerUserId").limit(100000)
+// filtered_posts_users = filtered_posts_users.limit(filtered_posts_users.count() / 10)
+filtered_posts_users.write.format("com.databricks.spark.csv").option("nullValue", "").save("graph/edges/posts_owners")
+// val users_then_posts = filtered_posts_users.withColumnRenamed("@OwnerUserId", "a").withColumn("b", lit(null: String)).withColumnRenamed("@Id", "c").select("a","b","c")
+// posts_then_users.unionAll(users_then_posts).write.format("com.databricks.spark.csv").option("nullValue", "").save("graph/edges/posts_owners")
