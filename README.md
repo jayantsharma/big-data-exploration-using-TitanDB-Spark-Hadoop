@@ -54,6 +54,8 @@ df.select("@Id", "@DisplayName", "@Age", "@Location", "@UpVotes", "@DownVotes", 
 - Modify in-place XML so it's readable
 ```sh
 sed -i -e 's/\/>/><foo>bar<\/foo><\/row>/' Users.xml
+```
+Spark LOC
 ```scala
 // Take 1/n fraction of data points
 var filtered_posts_users = df.filter(df.col("@OwnerUserId").isNotNull).select("@Id", "@OwnerUserId").limit(100000)
