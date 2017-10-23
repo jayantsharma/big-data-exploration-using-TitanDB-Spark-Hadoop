@@ -2,16 +2,13 @@ PROJECT_DIR = "/home/jayant/work/masters/course_work/big_data_engg/nosql_project
 
 g = TitanFactory.open(PROJECT_DIR + "/conf/se_dump.properties")
 m = g.openManagement()
-// vertex labels
+
+// Create Vertex label : user
 user = m.makeVertexLabel("user").make()
-//    song   = m.makeVertexLabel("song").make()
 
-// edge labels
-//    sungBy     = m.makeEdgeLabel("sungBy").make()
-//    writtenBy  = m.makeEdgeLabel("writtenBy").make()
-//    followedBy = m.makeEdgeLabel("followedBy").make()
+// User properties
 
-// vertex and edge properties
+// required by the Bulkloader program; the rest should be self explanatory
 blid            = m.makePropertyKey("bulkLoader.vertex.id").dataType(String.class).make()
 user_id         = m.makePropertyKey("Id").dataType(Integer.class).make()
 display_name    = m.makePropertyKey("DisplayName").dataType(String.class).make()
@@ -21,21 +18,18 @@ upvotes         = m.makePropertyKey("UpVotes").dataType(Integer.class).make()
 downvotes       = m.makePropertyKey("DownVotes").dataType(Integer.class).make()
 reputation      = m.makePropertyKey("Reputation").dataType(Integer.class).make()
 
-//    performances = m.makePropertyKey("performances").dataType(Integer.class).make()
-//    weight       = m.makePropertyKey("weight").dataType(Integer.class).make()
-
-// global indices
+// global index on bulkloader.vertex.id
 m.buildIndex("byBulkLoaderVertexId", Vertex.class).addKey(blid).buildCompositeIndex()
-//    m.buildIndex("artistsByName", Vertex.class).addKey(name).indexOnly(artist).buildCompositeIndex()
-//    m.buildIndex("songsByName", Vertex.class).addKey(name).indexOnly(song).buildCompositeIndex()
-// vertex centric indices
-//    m.buildEdgeIndex(followedBy, "followedByWeight", Direction.BOTH, Order.decr, weight)
+
 m.commit()
 g.close()
 
+// Specifies settings for Hadoop-Gremlin - the processing powerhouse of Tinkerpop 
 graph = GraphFactory.open(PROJECT_DIR + "/conf/hadoop-graph/users-hadoop-load.properties")
 
+// Graph Engine settings
 writeGraph = PROJECT_DIR + "/conf/se_dump.properties"
 blvp = BulkLoaderVertexProgram.build().keepOriginalIds(true).writeGraph(writeGraph).
         intermediateBatchSize(10000).create(graph)
+// Run over Spark (no config settings required, Spark is part of Hadoop-Gremlin)
 graph.compute(SparkGraphComputer).program(blvp).submit().get()
