@@ -1,4 +1,4 @@
-PROJECT_DIR = System.getenv("SE_DUMP_HOME")
+PROJECT_DIR = "/home/jayant/work/masters/course_work/big_data_engg/nosql_project/titan-1.0.0-hadoop1"
 
 g = TitanFactory.open(PROJECT_DIR + "/conf/se_dump.properties")
 m = g.openManagement()
@@ -12,7 +12,7 @@ user = m.makeVertexLabel("user").make()
 //    followedBy = m.makeEdgeLabel("followedBy").make()
 
 // vertex and edge properties
-blid            = m.makePropertyKey("bulkLoader.vertex.id").dataType(Long.class).make()
+blid            = m.makePropertyKey("bulkLoader.vertex.id").dataType(String.class).make()
 user_id         = m.makePropertyKey("Id").dataType(Integer.class).make()
 display_name    = m.makePropertyKey("DisplayName").dataType(String.class).make()
 age             = m.makePropertyKey("Age").dataType(Float.class).make()

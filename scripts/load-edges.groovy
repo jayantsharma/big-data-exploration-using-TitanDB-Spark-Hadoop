@@ -1,4 +1,4 @@
-PROJECT_DIR = System.getenv("SE_DUMP_HOME")
+PROJECT_DIR = "/home/jayant/work/masters/course_work/big_data_engg/nosql_project/titan-1.0.0-hadoop1"
 
 g = TitanFactory.open(PROJECT_DIR + "/conf/se_dump.properties")
 m = g.openManagement()
