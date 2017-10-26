@@ -1,4 +1,4 @@
-## SETUP (TitanDB - HBase - Elasticsearch)
+## SETUP (TitanDB - Cassandra - Elasticsearch)
 
 __NOTE__: All versions of the following support software have been selected because of limitations with TitanDB 1.0.0. The last public release of TitanDB was over 2 years ago, when they only supported Hadoop 1.
 
