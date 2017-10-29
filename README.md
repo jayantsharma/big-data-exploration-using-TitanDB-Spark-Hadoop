@@ -1,3 +1,31 @@
+## Introduction
+We begin with an introduction to the Tech Stack that we used before briefly elucidating the schema of the dataset that was ingested. Onwards, we elaborate the Setup, and then the Data Ingestion methodology including reasons for choosing different parts of the stack.
+
+The second part deals with Indexing and Retrieval of data using Gremlin from TitanDB. We conclude with a short summary and an attached appendix.
+
+## Tech Stack
+![tech-stack](https://github.com/jayantsharma/bigDataExplorationUsingTitandbAndHadoop/blob/master/images/tech_stack.png)
+
+### Details
+1. _Spark_ in conjunction with _HDFS_ for pre-processing of data.
+1. _TitanDB_ configured with _Cassandra_ as the storage-backend and _ElasticSearch_ as the indexing-backend serves as our graph database.
+1. Spark interacting with HDFS is responsible for _Bulk Ingestion_ of data in TitanDB.
+1. _MapReduce_ leveraged to build indexes over the graph database.
+
+## Schema
+In contrast to most mainstream technologies, TitanDB is not _schemaless_. Vertex and Edge labels as well as properties and their datatypes need to be declared before starting to use the database. This is generally done by a call to the graph's _ManagementSystem_ (for eg, refer: scripts/load-users.groovy).
+
+![schema](https://github.com/jayantsharma/bigDataExplorationUsingTitandbAndHadoop/blob/master/images/schema.png)
+
+The StackOverflow dataset, as noted in the proposal consists of 3 main elements:
+1. Users - The Stack Overflow users
+2. Posts - Questions or Answers
+3. Comments - User comments on posts
+
+Let's run through the sample schema pictured above.
+1. John, Bill and Silly are 3 fictional users.
+2. John asks the question "How to compute sum of ..." to which Bill answers "(1 to N toList) ...". Note that both the question and answer are posts, but in addition, the _answer\_post_ has an _answerTo_ relationship with the _question\_post_.
+
 ## SETUP (TitanDB - Cassandra - Elasticsearch)
 
 __NOTE__: All versions of the following support software have been selected because of limitations with TitanDB 1.0.0. The last public release of TitanDB was over 2 years ago, when they only supported Hadoop 1.
