@@ -105,6 +105,30 @@ We copy the data from HDFS to the local filesystem and use just one script: *scr
 
 ## Sample Queries
 ```groovy
+// Get users with 'murakami' in their name(text-insensitive) with a reputation between 10000 and 50000
+// Can be used to get the scala questions asked by high-rep users by leveraging wildcard search on tags of posts and range search on user-rep
+g.V().has("DisplayName", textContainsRegex("murakami")).has("Reputation", gt(1000)).count()
+
 // Get users connected to a certain user via answers to their asked questions (includes duplicates)
-g.V().has('bulkLoader.vertex.id', 'user:9').in('createdBy').has('PostTypeId', 1).in('answerTo').out('createdBy').values('DisplayName')
+g.V().has('bulkLoader.vertex.id', 'user:91').in('createdBy').has('PostTypeId', 1).in('answerTo').out('createdBy').values('DisplayName').dedup()
+
+// Get users connected to a given user u1 via comments on questions asked by u1
+g.V().has('bulkLoader.vertex.id', 'user:91').in('createdBy').has("PostTypeId", 1).in('commentOn').out('createdBy').values("DisplayName").dedup()
 ```
+
+## Indexing
+### Composite vs Mixed Indexes
+### Configuring app to never do full graph scans (force-index)
+### Build Index
+```groovy
+graph = TitanFactory.open('conf/se_dump.properties')
+mgmt = graph.openManagement()
+name = mgmt.getPropertyKey("DisplayName")
+/*
+ Build a graph-centric index on all the users indexing them by their name.
+*/
+mgmt.buildIndex('usersByName', Vertex.class).addKey(name, Mapping.TEXT.asParameter()).indexOnly("user").buildMixedIndex("search")
+```
+
+### Enable this:
+* g.V().has('name', textContains('hercules')).has('age', inside(20, 50)).order().by('age', decr).limit(10) 

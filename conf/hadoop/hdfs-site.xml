@@ -16,4 +16,8 @@
          <name>dfs.data.dir</name>
          <value>/home/jayant/dfs/data/</value>
      </property>
+     <property>
+         <name>dfs.name.dir</name>
+         <value>/home/jayant/dfs/name/</value>
+     </property>
 </configuration>
