@@ -111,34 +111,48 @@ We copy the data from HDFS to the local filesystem and use just one script: *scr
 In our framework, edges are lightweight connections between nodes without any properties. Hence, it stands to reason that they should be loaded with little effort. On my comp, where ingestion of 8 million users takes around 30 minutes, ingestion of even a 1 million edges easily surpasses that benchmark!
 
 #### Ingestion Statistics
+
 ##### Nodes
-vertex\_label | #
-------
+
+vertex\_label | \#
+------|-------
 user | 7.6M
 post | 3.4M
 comments | 3.9M
 
+
 ##### Relationships
-relationship\_type (edge\_label) | #
-------
+
+relationship\_type (edge\_label) | \#
+------|--------
 user <- post (createdBy) | 3.2M
 post <- post (answerTo) | 2.4M
 post <- comment (commentOn) | 250K
 user <- comment (createdBy) | 250K
 
 ## Data Retrieval
-We can do the following interesting queries with 
-
-## Sample Queries
+Here are some basic queries to give the reader a flavor of Gremlin DSL:
 ```groovy
-// Get users with 'murakami' in their name(text-insensitive) with a reputation between 10000 and 50000
-// Can be used to get the scala questions asked by high-rep users by leveraging wildcard search on tags of posts and range search on user-rep
-g.V().has("DisplayName", textContainsRegex("murakami")).has("Reputation", gt(1000)).count()
+// Get user with id 42
+g.V().has('bulkLoader.vertex.id', 'user:42').properties()
 
-// Get users connected to a certain user via answers to their asked questions
+// Get a couple of posts created by user with id 42
+// Note how the function "in" is used to traverse an edge
+g.V().has('bulkLoader.vertex.id', 'user:42').in('createdBy').has('bulkLoader.vertex.id', textPrefix('post')).limit(2).properties()
+
+// Get user who created a specific post
+g.V().has('bulkLoader.vertex.id', 'post:42').out('createdBy').properties()
+
+// Get answer to a question post
+g.V().has('bulkLoader.vertex.id', 'comment:42').in('answerTo').properties()
+```
+
+Funkier things with Gremlin can consist of trying to connect users via their questions and answers or their comments. For instance, look at the snippets below:
+```groovy
+// Get users connected to a certain user via answers to his/her asked questions
 g.V().has('bulkLoader.vertex.id', 'user:91').in('createdBy').has('PostTypeId', 1).in('answerTo').out('createdBy').values('DisplayName').dedup()
 
-// Get users connected to a given user u1 via comments on questions asked by u1
+// Get users connected to a given user U via comments on questions asked by U
 g.V().has('bulkLoader.vertex.id', 'user:91').in('createdBy').has("PostTypeId", 1).in('commentOn').out('createdBy').values("DisplayName").dedup()
 ```
 ## Sample Queries Part 2
@@ -161,10 +175,54 @@ g.V().match(
 ```
 
 
-## Indexing
-### Composite vs Mixed Indexes
-### Configuring app to never do full graph scans (force-index)
-### Build Index
+However, consider a range scan or wildcard query like the following:
+```groovy
+// Find users with murakami in their name
+g.V().has("DisplayName", textContainsRegex("murakami"))
+```
+TitanDB gives a warning on issuing this query, complaining that it will have to scan the entire graph. While graph scans can be forbidden by using a flag (force-index) on production environments, the solution is to use approprate indexes on items that are consistent with query patterns. 
+
+This is where ElasticSearch comes in. TitanDB provides the option of creating 2 different types of graph-indexes, described briefly:
+1. Composite Indexes - Defined on a pre-defined combination of properties that can only check for equality, i.e. no prefix or regex checks for strings and no less-than/greater-than checks for numbers. Since these are rather elementary kinds of indexes, these don't need the presence of an indexing backend.
+2. Mixed Indexes - More powerful indexes which can be used in combination with one another to answer queries about arbitrary combinations of keys. These require the presence of an Indexing backend like Elastic/Lucene and allow more powerful search predicates.
+
+### Indexing User properties
+Our aim is to enable fast lookups for queries of the sort:
+```groovy
+// Get users with 'murakami' in their name(text-insensitive) with a reputation greater than 1000
+g.V().has("DisplayName", textContainsRegex("murakami")).has("Reputation", gt(1000)).count()
+```
+It's obvious that this requires an index on the property 'DisplayName' and another one on 'Reputation' for _all_ users. Here's how you can build an index for DisplayName:
+```groovy
+mgmt = graph.openManagement()
+display_name = mgmt.getPropertyKey("DisplayName")
+
+/*
+ Create an index using DisplayName
+ Observe the Mapping.TEXT argument; this is the default and indexes DisplayName 
+ by tokenizing it into words so that any query be default operates at the 
+ word/token level, NOT the entire string
+*/
+usersByNameIndex = mgmt.buildIndex("usersByName", Vertex.class).addKey(display_name, Mapping.TEXT.asParameter()).buildMixedIndex("search")
+mgmt.commit()
+```
+This and a couple more lines are generally all you need to do if you're creating the property alongwith creating the index. When that is not so, as was in our case, a _Reindexing_ procedure must be run to index the previously existing graph data. For large graphs, this can be run as a MapReduce job (the simpler procedure on my machine gives no hint of stopping even after 2 hours).
+
+A painful Hadoop/MapReduce setup is required in order to do so. Unlike the earlier blvp program, in which Spark is run internally by TitanDB, running MapReduce job and task trackers are required in order to execute the Reindexing procedure. Make sure that the TitanDB jars are added to the CLASSPATH var of Hadoop. Here's a snippet that demonstrates how the procedure can be run:
+```groovy
+// Run a Titan-Hadoop job to reindex
+mgmt = graph.openManagement()
+mr = new MapReduceIndexManagement(graph)
+mr.updateIndex(mgmt.getGraphIndex("usersByNameIndex"), SchemaAction.REINDEX).get()
+```
+
+After the index is registered and enabled, the magic becomes apparent as you try to execute the above discussed query. No warnings appear, results are displayed quickly without rendering the machine unusable. To give a more complete use-case, good indexes for the present dataset may efficiently answer questions of the sort: What are all the questions tagged 'C++' asked by the 5 most highly reputed users having 'Linus' in their name ?
+
+## Learning
+Two of the biggest learnings that we had from the course may be summarized thus:
+2. Using outdated tech is a BAD idea. TitanDB is compatible with versions of Cassandra, ES, Hadoop and Spark that are found deep in git archives and their documentation is even more difficult to locate. Dev time is precious and should not be wasted endlessly on setups.
+1. Build using tiny samples of data. 1GB files are unsuitable for testing out stuff no matter how obvious things may seem before trying them out. Large execution times mean longer feedback loops and hence, slower progress.
+
 ```groovy
 graph = TitanFactory.open('conf/se_dump.properties')
 mgmt = graph.openManagement()
@@ -211,3 +269,28 @@ Not an essential per se, but the Big Data requirement(parsing of XML files runni
 4. Edit `bin/gremlin.sh` to ensure CLASSPATH includes the path to Hadoop's conf directory. Refer `bin/gremlin.sh`.
 4. Copy the opencsv and groovycsv jars from the *lib* directory of the repo to lib directory of your TitanDB project dir.
 4. `bin/gremlin.sh` from inside the project directory, and you're good to go.
+
+## Data Details
+The following attributes alongwith the data types mentioned alongside were ingested for each of the node types. Please note that graph edges are attribute-less.
+* Users
+   - Id               :: Integer
+   - DisplayName      :: String
+   - Age              :: Float
+   - Location         :: String
+   - UpVotes          :: Integer
+   - DownVotes        :: Integer
+   - Reputation       :: Integer
+* Posts
+   - Id               :: Integer
+   - PostTypeId       :: Integer
+      - 1: Question
+      - 2: Answer
+   - CreationDate     :: Date
+   - Score            :: Integer
+   - Tags             :: String
+   - AnswerCount      :: Integer
+   - CommentCount     :: Integer
+   - FavoriteCount    :: Integer
+* Comments
+   - Id               :: Integer
+   - Score            :: Integer
