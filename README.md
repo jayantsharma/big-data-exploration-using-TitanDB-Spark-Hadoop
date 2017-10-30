@@ -207,18 +207,12 @@ Two of the biggest learnings that we had from the course may be summarized thus:
 1. Using outdated tech is a BAD idea. TitanDB is compatible with versions of Cassandra, ES, Hadoop and Spark that are found deep in git archives and their documentation is even more difficult to locate. Dev time is precious and should not be wasted endlessly on setups.
 2. Build using tiny samples of data. 1GB files are unsuitable for testing out stuff no matter how obvious things may seem before trying them out. Large execution times mean longer feedback loops and hence, slower progress.
 
-```groovy
-graph = TitanFactory.open('conf/se_dump.properties')
-mgmt = graph.openManagement()
-name = mgmt.getPropertyKey("DisplayName")
-/*
- Build a graph-centric index on all the users indexing them by their name.
-*/
-mgmt.buildIndex('usersByName', Vertex.class).addKey(name, Mapping.TEXT.asParameter()).indexOnly("user").buildMixedIndex("search")
-```
+\pagebreak
 
-### Enable this:
-* g.V().has('name', textContains('hercules')).has('age', inside(20, 50)).order().by('age', decr).limit(10) 
+# APPENDIX
+
+## Git Repo Link
+[Here you go.](https://github.com/jayantsharma/bigDataExplorationUsingTitandbAndHadoop)
 
 ## SETUP (TitanDB - Cassandra - Elasticsearch)
 
