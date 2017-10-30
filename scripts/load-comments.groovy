@@ -6,6 +6,8 @@ m = g.openManagement()
 // Create Vertex label : comment
 comment = m.makeVertexLabel("comment").make()
 
+// The property Score already exists, so nothing to do about that.
+
 m.commit()
 g.close()
 

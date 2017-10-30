@@ -28,20 +28,6 @@ def parse(line, factory) {
         if (post_data[it] != null && post_data[it].isInteger() )
           v1.property(it, post_data[it].toInteger())
       }
- 
-//     def owner = factory.vertex(owner_user_id, 'user')
-//     factory.edge(v1, owner, 'createdBy')
-//     factory.edge(owner, v1, 'createdBy')
-
-//     if (parent_id != null) {
-//       def parent_post = factory.vertex(parent_id, 'post')
-//       factory.edge(v1, parent_post, 'answerTo') 
-//     }
-// 
-//     if (accepted_answer_id != null) {
-//       def accepted_answer = factory.vertex(accepted_answer_id, 'post')
-//       factory.edge(v1, accepted_answer, 'acceptedAnswer') 
-//     }
 
       return v1
     }
