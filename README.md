@@ -1,7 +1,7 @@
 ## Introduction
-We begin with an introduction to the Tech Stack that we used before briefly elucidating the schema of the dataset that was ingested. Onwards, the Data Ingestion methodology including reasons for choosing different parts of the stack.
+We begin with an introduction to the Tech Stack that we used before briefly elucidating the schema of the dataset that was ingested. Onwards, the Data Ingestion methodology including reasons for choosing different parts of the stack is addressed.
 
-The second part deals with Indexing and Retrieval of data using Gremlin from TitanDB. We conclude with a short summary and an attached appendix. The appendix includes detailed directions for Setup.
+The second part deals with Indexing and Retrieval of data using Gremlin from TitanDB. We conclude with a short section on key learnings and an attached appendix. The appendix includes detailed directions for Setup.
 
 ## Tech Stack
 ![tech-stack](https://github.com/jayantsharma/bigDataExplorationUsingTitandbAndHadoop/blob/master/images/tech_stack.png)
@@ -9,11 +9,11 @@ The second part deals with Indexing and Retrieval of data using Gremlin from Tit
 ### Details
 1. _Spark_ in conjunction with _HDFS_ for pre-processing of data.
 1. _TitanDB_ configured with _Cassandra_ as the storage-backend and _ElasticSearch_ as the indexing-backend serves as our graph database.
-1. Spark interacting with HDFS is responsible for _Bulk Ingestion_ of data in TitanDB.
-1. _MapReduce_ leveraged to build indexes over the graph database.
+1. Spark (internal to TitanDB) interacting with HDFS is responsible for _Bulk Ingestion_ of data in TitanDB.
+1. _MapReduce_ leveraged to build ElasticSearch indexes over the graph database.
 
 ## Schema
-In contrast to most mainstream NoSQL technologies, TitanDB is not _schemaless_. Vertex and Edge labels as well as properties and their datatypes need to be declared before starting to use the database. This is generally done by a call to the graph's _ManagementSystem_ (for eg, refer: scripts/load-users.groovy).
+In contrast to most mainstream NoSQL technologies, TitanDB is not _schemaless_. Vertex and Edge labels, as well as properties and their datatypes need to be declared before starting to use the database. This is generally done by a call to the graph's _ManagementSystem_ (for eg, refer: _scripts/load-users.groovy_).
 
 ![schema](https://github.com/jayantsharma/bigDataExplorationUsingTitandbAndHadoop/blob/master/images/schema.png)
 
@@ -34,8 +34,8 @@ Let's run through the sample schema pictured above.
 We walk through the strategy in detail explaining the reasons for our choices alongwith any nuances with the help of text as well as code.
 
 ### General Strategy
-1. Read XML files from HDFS using Spark, filter out the data of interest and write to CSV again in HDFS.
-2. Use BulkLoaderVertexProgram (running over Spark) to digest the resulting CSV file and add nodes to graph.
+1. Read XML files from HDFS using Spark, filter in the data of interest and write to HDFS again in CSV format.
+2. Use BulkLoaderVertexProgram (running over Spark) to digest the resulting CSV files and add nodes to the graph.
 
 ### Detailed Example for User nodes
 #### Convert Data to CSV using Spark
@@ -79,11 +79,11 @@ df.select("@Id", "@DisplayName", "@Age", "@Location", "@UpVotes", "@DownVotes", 
 ```
 
 #### Ingest Data in TitanDB
-Loading the graph elements transactionally, i.e. one-by-one into the database may be a resonable strategy for small datasets, however, it quickly becomes infeasible for large datasets. Delving deeper into the literature around TitanDB, we discovered a utility program known as the *BulkLoaderVertexProgram*, that is built for exactly this use-case. But first, some tech details.
+Loading the graph elements transactionally, i.e. one-by-one into the database may be a resonable strategy for small datasets, however, it quickly becomes infeasible for large datasets. Delving deeper into the literature around TitanDB, we discovered a utility program known as the *BulkLoaderVertexProgram*, that is built exactly for this use-case. But first, some tech details.
 
-TitanDB heavily uses TinkerPop, the popular graph computing framework for a variety of purposes, including graph traversals and computations. It's easy to see that graph computations over large graphs is a non-trivial problem. To tackle it, TinkerPop provides _Hadoop-Gremlin_, a scalable graph engine for processing large graphs. Hadoop-Gremlin provides support for computing over Giraph, Spark or MapReduce. 
+TitanDB heavily uses TinkerPop, the popular graph computing framework for a variety of purposes, including graph traversals and computations. It's easy to see that graph computations over large graphs is a non-trivial problem. To tackle it, TinkerPop provides _Hadoop-Gremlin_ (formerly TinkerPop Furnace), a scalable graph engine for processing large graphs. Hadoop-Gremlin provides support for computing over Giraph, Spark and MapReduce. 
 
-We are going to leverage Hadoop-Gremlin (formerly TinkerPop Furnace) to bulk-process our data. Hadoop-Gremlin allows bulk ingestion of data using its BulkLoaderVertexProgram (blvp, in short) via reading of standard as well as arbitrarily formatted files (using Hadoop's ScriptInputFormat). CSV is a custom or arbitrary format because the standard formats for graph ingestion are GraphML and GraphSON, based on XML and JSON respectively. The formats for both of these are fairly sophisticated and the general method of producing such files is generally by outputting a graph in one of these formats, which doesn't work for our case.
+Hadoop-Gremlin allows bulk ingestion of data using its BulkLoaderVertexProgram (blvp, in short) via reading of standard as well as arbitrarily formatted files (using Hadoop's ScriptInputFormat). CSV is a custom or arbitrary format because the standard formats for graph ingestion are GraphML and GraphSON, based on XML and JSON respectively. The formats for both of these are fairly sophisticated and the usual method of producing such files is generally by outputting a graph in one of these formats, which doesn't work for our case.
 
 An obvious implication of the custom format is a script that can parse the format. Therefore, there are 3 files that we need to put in place for TitanDB to process the data.
 1. *scripts/load\_users.groovy* : Creates the attributes and label of nodes (here, users) that we need.
@@ -105,8 +105,8 @@ var filtered_posts_users = df.filter(df.col("@OwnerUserId").isNotNull).select("@
 // write to CSV
 filtered_posts_users.write.format("com.databricks.spark.csv").option("nullValue", "").save("graph/edges/posts_owners")
 ```
-#### Ingesting in TitanDB
-We copy the data from HDFS to the local filesystem and use just one script: *scripts/load_user_posts_edges.groovy* to load the edges into the graph. The script iterates over all lines in all files in the specified directory, loading edges one-by-one. This provides a convenient point to assess the efficacy of blvp by comparing the runtimes of two. 
+#### Ingesting into TitanDB
+We copy the data from HDFS to the local filesystem and use just one script: *scripts/load-posts-owners.groovy* to load the edges into the graph. The script iterates over _all lines_ in _all files_ in the specified directory, loading edges _one-by-one_. This provides a convenient point to assess the efficacy of blvp by comparing the runtimes of two. 
 
 In our framework, edges are lightweight connections between nodes without any properties. Hence, it stands to reason that they should be loaded with little effort. On my comp, where ingestion of 8 million users takes around 30 minutes, ingestion of even a 1 million edges easily surpasses that benchmark!
 
@@ -114,7 +114,7 @@ In our framework, edges are lightweight connections between nodes without any pr
 
 ##### Nodes
 
-vertex\_label | \#
+vertex\_label | \# ingested
 ------|-------
 user | 7.6M
 post | 3.4M
@@ -123,7 +123,7 @@ comments | 3.9M
 
 ##### Relationships
 
-relationship\_type (edge\_label) | \#
+relationship\_type (edge\_label) | \# ingested
 ------|--------
 user <- post (createdBy) | 3.2M
 post <- post (answerTo) | 2.4M
@@ -137,14 +137,14 @@ Here are some basic queries to give the reader a flavor of Gremlin DSL:
 g.V().has('bulkLoader.vertex.id', 'user:42').properties()
 
 // Get a couple of posts created by user with id 42
-// Note how the function "in" is used to traverse an edge
+// Note how the function "in" is used to traverse an edge, and "textPrefix" used to get only posts (out of posts and comments)
 g.V().has('bulkLoader.vertex.id', 'user:42').in('createdBy').has('bulkLoader.vertex.id', textPrefix('post')).limit(2).properties()
 
 // Get user who created a specific post
 g.V().has('bulkLoader.vertex.id', 'post:42').out('createdBy').properties()
 
 // Get answer to a question post
-g.V().has('bulkLoader.vertex.id', 'comment:42').in('answerTo').properties()
+g.V().has('bulkLoader.vertex.id', 'post:42').in('answerTo').properties()
 ```
 
 Funkier things with Gremlin can consist of trying to connect users via their questions and answers or their comments. For instance, look at the snippets below:
@@ -156,6 +156,7 @@ g.V().has('bulkLoader.vertex.id', 'user:91').in('createdBy').has('PostTypeId', 1
 g.V().has('bulkLoader.vertex.id', 'user:91').in('createdBy').has("PostTypeId", 1).in('commentOn').out('createdBy').values("DisplayName").dedup()
 ```
 
+### Range Scans and Wildcard Queries
 However, consider a range scan or wildcard query like the following:
 ```groovy
 // Find users with murakami in their name
@@ -164,8 +165,8 @@ g.V().has("DisplayName", textContainsRegex("murakami"))
 TitanDB gives a warning on issuing this query, complaining that it will have to scan the entire graph. While graph scans can be forbidden by using a flag (force-index) on production environments, the solution is to use approprate indexes on items that are consistent with query patterns. 
 
 This is where ElasticSearch comes in. TitanDB provides the option of creating 2 different types of graph-indexes, described briefly:
-1. Composite Indexes - Defined on a pre-defined combination of properties that can only check for equality, i.e. no prefix or regex checks for strings and no less-than/greater-than checks for numbers. Since these are rather elementary kinds of indexes, these don't need the presence of an indexing backend.
-2. Mixed Indexes - More powerful indexes which can be used in combination with one another to answer queries about arbitrary combinations of keys. These require the presence of an Indexing backend like Elastic/Lucene and allow more powerful search predicates.
+1. **Composite Indexes** - Defined on a pre-defined combination of properties that can only check for equality, i.e. no prefix or regex checks for strings and no less-than/greater-than checks for numbers. Since these are rather elementary kinds of indexes, these don't need the presence of an indexing backend.
+2. **Mixed Indexes** - More powerful indexes which can be used in combination with one another to answer queries about arbitrary combinations of indexed keys. These require the presence of an Indexing backend like Elastic/Lucene and allow more powerful search predicates.
 
 ### Indexing User properties
 Our aim is to enable fast lookups for queries of the sort:
@@ -197,12 +198,14 @@ mr = new MapReduceIndexManagement(graph)
 mr.updateIndex(mgmt.getGraphIndex("usersByNameIndex"), SchemaAction.REINDEX).get()
 ```
 
-After the index is registered and enabled, the magic becomes apparent as you try to execute the above discussed query. No warnings appear, results are displayed quickly without rendering the machine unusable. To give a more complete use-case, good indexes for the present dataset may efficiently answer questions of the sort: What are all the questions tagged 'C++' asked by the 5 most highly reputed users having 'Linus' in their name ?
+After the index is registered and enabled, the magic becomes apparent as you try to execute the above discussed query. No warnings appear, results are displayed quickly without rendering the machine unusable. 
 
-## Learning
+To give a more complete use-case, good indexes for the present dataset may efficiently answer questions of the sort: What are all the questions tagged 'C++' asked by the 5 most highly reputed users having 'Linus' in their name ?
+
+## Learnings
 Two of the biggest learnings that we had from the course may be summarized thus:
-2. Using outdated tech is a BAD idea. TitanDB is compatible with versions of Cassandra, ES, Hadoop and Spark that are found deep in git archives and their documentation is even more difficult to locate. Dev time is precious and should not be wasted endlessly on setups.
-1. Build using tiny samples of data. 1GB files are unsuitable for testing out stuff no matter how obvious things may seem before trying them out. Large execution times mean longer feedback loops and hence, slower progress.
+1. Using outdated tech is a BAD idea. TitanDB is compatible with versions of Cassandra, ES, Hadoop and Spark that are found deep in git archives and their documentation is even more difficult to locate. Dev time is precious and should not be wasted endlessly on setups.
+2. Build using tiny samples of data. 1GB files are unsuitable for testing out stuff no matter how obvious things may seem before trying them out. Large execution times mean longer feedback loops and hence, slower progress.
 
 ```groovy
 graph = TitanFactory.open('conf/se_dump.properties')
