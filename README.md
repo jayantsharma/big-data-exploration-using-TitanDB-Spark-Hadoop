@@ -152,6 +152,12 @@ g.V().has('bulkLoader.vertex.id', 'user:2').in("votedFor").has("VoteTypeId",2).c
 
 // Sometimes when you just need to aggregate a list of various values like let's say name, we can do the following
 g.V().has("DisplayName", textContainsRegex("John")).fold()
+
+// If we need to match the various patterns in the graph for the users for similar posts, we can use
+g.V().match(
+                 __.as("creators").out("createdBy").has("DisplayName, "Sam").as("posts"), 
+                 __.as("posts").in("createdBy").has("Location", "Menlo Park").as("cocreators")). 
+               select("creators","cocreators").by("DisplayName")
 ```
 
 
