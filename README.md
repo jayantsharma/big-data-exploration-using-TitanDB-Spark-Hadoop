@@ -250,3 +250,28 @@ Not an essential per se, but the Big Data requirement(parsing of XML files runni
 4. Edit `bin/gremlin.sh` to ensure CLASSPATH includes the path to Hadoop's conf directory. Refer `bin/gremlin.sh`.
 4. Copy the opencsv and groovycsv jars from the *lib* directory of the repo to lib directory of your TitanDB project dir.
 4. `bin/gremlin.sh` from inside the project directory, and you're good to go.
+
+## Data Details
+The following attributes alongwith the data types mentioned alongside were ingested for each of the node types. Please note that graph edges are attribute-less.
+* Users
+   - Id               :: Integer
+   - DisplayName      :: String
+   - Age              :: Float
+   - Location         :: String
+   - UpVotes          :: Integer
+   - DownVotes        :: Integer
+   - Reputation       :: Integer
+* Posts
+   - Id               :: Integer
+   - PostTypeId       :: Integer
+      - 1: Question
+      - 2: Answer
+   - CreationDate     :: Date
+   - Score            :: Integer
+   - Tags             :: String
+   - AnswerCount      :: Integer
+   - CommentCount     :: Integer
+   - FavoriteCount    :: Integer
+* Comments
+   - Id               :: Integer
+   - Score            :: Integer
