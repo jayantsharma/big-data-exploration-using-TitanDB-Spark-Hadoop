@@ -147,6 +147,8 @@ g.V().has('bulkLoader.vertex.id', 'user:91').in('createdBy').has("PostTypeId", 1
 g.V().has("DisplayName", textContainsRegex("John","Doe")).order().by('Reputation',decr).limit(5).in("createdBy").has("PostTypeId",1).has("Tags", textContainsRegex("Java"))
 // Get Users with name 'John' and find out the answers they have written containing the tag 'Java'
 g.V().has("DisplayName", textContainsRegex("John")).in("createdBy").has("PostTypeId",2).has("Tags=", textContainsRegex("Java"))
+// Get User with Id2 and find out the number of UpMods the particular user has.
+g.V().has('bulkLoader.vertex.id', 'user:2').in("createdBy").has("VoteTypeId",2).count()
 
 ## Indexing
 ### Composite vs Mixed Indexes
