@@ -144,6 +144,13 @@ g.V().has('bulkLoader.vertex.id', 'user:91').in('createdBy').has('PostTypeId', 1
 g.V().has('bulkLoader.vertex.id', 'user:91').in('createdBy').has("PostTypeId", 1).in('commentOn').out('createdBy').values("DisplayName").dedup()
 ```
 
+## Sample Queries Part 2
+```groovy
+// Get Users with names either 'John' or 'Doe' and sort and find the top 5 according to their reputations and find out the questions they have asked having tags 'Java' for example. This includes duplicates.
+g.V().has("DisplayName", textContainsRegex("John","Doe")).order().by('Reputation',decr).limit(5).in("createdBy").has("PostTypeId",1).has("Tags=", textContainsRegex("Java")).dedup()
+// Get Users with name 'John' and sort them out based on the number of answers they have written containing the tag 'Java'
+g.V().has("DisplayName", textContainsRegex("John")).in("createdBy").order().by("AnswerCount",decr).has("PostTypeId",2).has("Tags=", textContainsRegex("Java"))
+
 ## Indexing
 ### Composite vs Mixed Indexes
 ### Configuring app to never do full graph scans (force-index)
