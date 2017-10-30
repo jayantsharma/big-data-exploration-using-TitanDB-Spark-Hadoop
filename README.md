@@ -111,16 +111,20 @@ We copy the data from HDFS to the local filesystem and use just one script: *scr
 In our framework, edges are lightweight connections between nodes without any properties. Hence, it stands to reason that they should be loaded with little effort. On my comp, where ingestion of 8 million users takes around 30 minutes, ingestion of even a 1 million edges easily surpasses that benchmark!
 
 #### Ingestion Statistics
+
 ##### Nodes
-vertex\_label | #
-------
+
+vertex\_label | \#
+------|-------
 user | 7.6M
 post | 3.4M
 comments | 3.9M
 
+
 ##### Relationships
-relationship\_type (edge\_label) | #
-------
+
+relationship\_type (edge\_label) | \#
+------|--------
 user <- post (createdBy) | 3.2M
 post <- post (answerTo) | 2.4M
 post <- comment (commentOn) | 250K
