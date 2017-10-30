@@ -207,8 +207,6 @@ Two of the biggest learnings that we had from the course may be summarized thus:
 1. Using outdated tech is a BAD idea. TitanDB is compatible with versions of Cassandra, ES, Hadoop and Spark that are found deep in git archives and their documentation is even more difficult to locate. Dev time is precious and should not be wasted endlessly on setups.
 2. Build using tiny samples of data. 1GB files are unsuitable for testing out stuff no matter how obvious things may seem before trying them out. Large execution times mean longer feedback loops and hence, slower progress.
 
-\pagebreak
-
 # APPENDIX
 
 ## Git Repo Link
