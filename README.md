@@ -155,25 +155,6 @@ g.V().has('bulkLoader.vertex.id', 'user:91').in('createdBy').has('PostTypeId', 1
 // Get users connected to a given user U via comments on questions asked by U
 g.V().has('bulkLoader.vertex.id', 'user:91').in('createdBy').has("PostTypeId", 1).in('commentOn').out('createdBy').values("DisplayName").dedup()
 ```
-## Sample Queries Part 2
-```groovy
-// Get Users with names either 'John' or 'Doe' and sort and find the top 5 according to their reputations and find out the questions they have asked having tags 'Java' for example. This includes duplicates.
-g.V().has("DisplayName", textContainsRegex("John","Doe")).order().by('Reputation',decr).limit(5).in("createdBy").has("PostTypeId",1).has("Tags", textContainsRegex("Java"))
-// Get Users with name 'John' and find out the answers they have written containing the tag 'Java'
-g.V().has("DisplayName", textContainsRegex("John")).in("createdBy").has("PostTypeId",2).has("Tags=", textContainsRegex("Java"))
-// Get User with Id2 and find out the number of UpMods the particular user has.
-g.V().has('bulkLoader.vertex.id', 'user:2').in("votedFor").has("VoteTypeId",2).count()
-
-// Sometimes when you just need to aggregate a list of various values like let's say name, we can do the following
-g.V().has("DisplayName", textContainsRegex("John")).fold()
-
-// If we need to match the various patterns in the graph for the users for similar posts, we can use
-g.V().match(
-                 __.as("creators").out("createdBy").has("DisplayName, "Sam").as("posts"), 
-                 __.as("posts").in("createdBy").has("Location", "Menlo Park").as("cocreators")). 
-               select("creators","cocreators").by("DisplayName")
-```
-
 
 However, consider a range scan or wildcard query like the following:
 ```groovy
@@ -294,3 +275,22 @@ The following attributes alongwith the data types mentioned alongside were inges
 * Comments
    - Id               :: Integer
    - Score            :: Integer
+
+## Yet More Queries
+```groovy
+// Get Users with names either 'John' or 'Doe' and sort and find the top 5 according to their reputations and find out the questions they have asked having tags 'Java' for example. This includes duplicates.
+g.V().has("DisplayName", textContainsRegex("John","Doe")).order().by('Reputation',decr).limit(5).in("createdBy").has("PostTypeId",1).has("Tags", textContainsRegex("Java"))
+// Get Users with name 'John' and find out the answers they have written containing the tag 'Java'
+g.V().has("DisplayName", textContainsRegex("John")).in("createdBy").has("PostTypeId",2).has("Tags=", textContainsRegex("Java"))
+// Get User with Id2 and find out the number of UpMods the particular user has.
+g.V().has('bulkLoader.vertex.id', 'user:2').in("votedFor").has("VoteTypeId",2).count()
+
+// Sometimes when you just need to aggregate a list of various values like let's say name, we can do the following
+g.V().has("DisplayName", textContainsRegex("John")).fold()
+
+// If we need to match the various patterns in the graph for the users for similar posts, we can use
+g.V().match(
+                 __.as("creators").out("createdBy").has("DisplayName, "Sam").as("posts"), 
+                 __.as("posts").in("createdBy").has("Location", "Menlo Park").as("cocreators")). 
+               select("creators","cocreators").by("DisplayName")
+```
